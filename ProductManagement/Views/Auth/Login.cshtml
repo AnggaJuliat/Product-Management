@@ -1,0 +1,82 @@
+@{
+    ViewData["Title"] = "Login - Product Management";
+}
+
+<div class="row justify-content-center mt-5">
+    <div class="col-md-5">
+        <div class="card shadow-sm border-0">
+            <div class="card-body p-4">
+                <h3 class="card-title text-center mb-4">Login</h3>
+                <div id="alertBox" class="alert d-none"></div>
+
+                <div class="mb-3">
+                    <label class="form-label">Username</label>
+                    <input type="text" id="loginUsername" class="form-control" placeholder="Enter username" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Password</label>
+                    <input type="password" id="loginPassword" class="form-control" placeholder="Enter password" required>
+                </div>
+
+                <button class="btn btn-primary w-100 py-2 mb-3" onclick="submitLogin()">Login</button>
+                <div class="text-center">
+                    <span class="text-muted">Don't have an account?</span>
+                    <a href="/register" class="text-decoration-none">Register Here</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // If already logged in, redirect to products
+        if (localStorage.getItem("jwt_token")) {
+            window.location.href = "/products";
+        }
+
+        async function submitLogin() {
+            const u = document.getElementById("loginUsername").value.trim();
+            const p = document.getElementById("loginPassword").value;
+            const alertBox = document.getElementById("alertBox");
+
+            alertBox.className = "alert d-none";
+
+            if (!u || !p) {
+                alertBox.className = "alert alert-danger";
+                alertBox.innerText = "Username and password cannot be empty.";
+                return;
+            }
+
+            try {
+                const res = await fetch("/api/auth/login", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ username: u, password: p })
+                });
+
+                const data = await res.json();
+
+                if (res.ok && data.token) {
+                    localStorage.setItem("jwt_token", data.token);
+                    alertBox.className = "alert alert-success";
+                    alertBox.innerText = "Login successful! Redirecting...";
+                    setTimeout(() => { window.location.href = "/products"; }, 1000);
+                } else {
+                    alertBox.className = "alert alert-danger";
+                    alertBox.innerText = data.message || "Invalid username or password.";
+                }
+            } catch (err) {
+                alertBox.className = "alert alert-danger";
+                alertBox.innerText = "A server disruption has occurred.";
+            }
+        }
+
+        // Enter key trigger
+        document.addEventListener("keydown", function (e) {
+            if (e.key === "Enter") {
+                submitLogin();
+            }
+        });
+    </script>
+}
